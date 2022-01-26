@@ -3,7 +3,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.124.0/build/three.m
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.124.0/examples/jsm/controls/OrbitControls.js'
 import { Rhino3dmLoader } from 'https://cdn.jsdelivr.net/npm/three@0.124.0/examples/jsm/loaders/3DMLoader.js'
 
-let camera, scene, raycaster, renderer, selectedMaterial
+
+
+let camera, scene, raycaster, renderer
 const mouse = new THREE.Vector2()
 window.addEventListener( 'click', onClick, false);
 
@@ -15,88 +17,46 @@ function init() {
     THREE.Object3D.DefaultUp = new THREE.Vector3( 0, 0, 1 )
 
     // create a scene and a camera
-    //new scene + background
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0xbfe3dd )
-    // camera
     camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 5000 );
-	//camera.position.set( 0, 75, 160 );
-    camera.position.set( 50, 50, 50 );
-camera.rotation.order = 'YXZ';
-camera.rotation.y = - Math.PI / 4;
-camera.rotation.x = Math.atan( - 1 / Math.sqrt( 2 ) );
+	camera.position.set( 0, 75, 160 );
+
+
+    //camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+    //camera.position.y = - 100
+
 
     // create the renderer and add it to the html
     renderer = new THREE.WebGLRenderer( { antialias: true } )
     renderer.setSize( window.innerWidth, window.innerHeight )
     document.body.appendChild( renderer.domElement )
+  
+    
+
+
 
     const controls = new OrbitControls( camera, renderer.domElement )
 
+    const directionalLight = new THREE.DirectionalLight( 0xffffff )
+    directionalLight.position.set( 0, 0, 30 )
+    directionalLight.castShadow = true
+    directionalLight.intensity = 2
 
-    //Lights
-
-    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.22 );
-    hemiLight.color.setHSL( 0.6, 1, 0.6 );
-    hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
-    hemiLight.position.set( 0, 5, 0 );
-    scene.add( hemiLight );
-
-    const dirLight = new THREE.DirectionalLight( 0xffffff,  );
-    dirLight.color.setHSL( 0.1, 1, 0.95 );
-    dirLight.position.set( - 1, 1.75, 1 );
-    dirLight.position.multiplyScalar( 60);
-    scene.add( dirLight );
-
-    dirLight.castShadow = true;
-
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-
-    const d = 50
-;
-
-    dirLight.shadow.camera.left = - d;
-    dirLight.shadow.camera.right = d;
-    dirLight.shadow.camera.top = d;
-    dirLight.shadow.camera.bottom = - d;
-
-    dirLight.shadow.camera.far = 3500;
-    dirLight.shadow.bias = - 0.0001;
-
-    //CLICKING USING RAYCASTER
-
-    selectedMaterial = new THREE.MeshStandardMaterial( {color: 'blue'} )
+    scene.add( directionalLight )
 
     raycaster = new THREE.Raycaster()
+
+    //add 3DM file here
     
-    //loading Rhino Geometry
     const loader = new Rhino3dmLoader()
     loader.setLibraryPath( 'https://cdn.jsdelivr.net/npm/rhino3dm@0.13.0/' )
 
     loader.load( 'Bureaux for web.3dm', function ( object ) {
 
         document.getElementById('loader').remove()
-        
-        
-        // store material information
-        object.traverse( (child) => {
-            if (child.userData.hasOwnProperty('objectType')) {
-                if (child.userData.objectType === 'Brep') {
-                    child.traverse( (c) => {
-                        if (c === child) return
-                        c.userData.material = c.material
-                        console.log(c.userData)
-                    })
-                } else {
-                    child.userData.material = child.material
-                    console.log(child.userData)
-                }
-            }
-        })
         scene.add( object )
         console.log( object )
-        console.log( scene )
 
     } )
 
@@ -122,10 +82,10 @@ function onClick( event ) {
 
     // reset object colours
     scene.traverse((child, i) => {
-        if (child.userData.hasOwnProperty( 'material' )) {
-            child.material = child.userData.material
+        if (child.isMesh) {
+            child.material.color.set( 'white' )
         }
-    })
+    });
 
     if (intersects.length > 0) {
 
@@ -133,19 +93,7 @@ function onClick( event ) {
         const object = intersects[0].object
         console.log(object) // debug
 
-        object.traverse( (child) => {
-            if (child.parent.userData.objectType === 'Brep') {
-                child.parent.traverse( (c) => {
-                    if (c.userData.hasOwnProperty( 'material' )) {
-                        c.material = selectedMaterial
-                    }
-                })
-            } else {
-                if (child.userData.hasOwnProperty( 'material' )) {
-                    child.material = selectedMaterial
-                }
-            }
-        })
+        object.material.color.set( 'pink' )
 
         // get user strings
         let data, count
